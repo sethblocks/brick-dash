@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brick Dash">
+<meta name="theme-color" content="#140f26">
+<meta name="description" content="Brick Dash - an original retro side-scrolling platformer starring Kit the courier fox.">
+<title>Brick Dash</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;background:#140f26;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{position:fixed;inset:0;font-family:system-ui,-apple-system,sans-serif}
+#game{position:absolute;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges;-ms-interpolation-mode:nearest-neighbor;background:#000;box-shadow:0 0 0 2px #2a2048,0 8px 30px rgba(0,0,0,.6)}
+#sa{position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#ui{position:absolute;inset:0;pointer-events:none;display:none}
+#ui.show{display:block}
+.pad{position:absolute;border-radius:50%;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.28);box-sizing:border-box}
+.arr{position:absolute;width:0;height:0;border:solid transparent;opacity:.75}
+.arr.on{opacity:1;filter:drop-shadow(0 0 6px #fff)}
+.btn{position:absolute;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:800 26px/1 system-ui,-apple-system,sans-serif;color:rgba(255,255,255,.92);border:2px solid rgba(255,255,255,.45);text-shadow:0 2px 0 rgba(0,0,0,.35)}
+#bA{background:rgba(232,80,60,.55)}#bB{background:rgba(60,120,232,.55)}
+.btn.on{transform:scale(.93);filter:brightness(1.5)}
+#bP{position:absolute;width:44px;height:30px;border-radius:9px;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.35);box-sizing:border-box;color:#fff;font:800 14px/26px system-ui,sans-serif;text-align:center}
+.lbl{position:absolute;font:700 11px system-ui,sans-serif;color:rgba(255,255,255,.55);text-align:center;width:80px}
+</style>
+</head>
+<body>
+<canvas id="game" width="256" height="240" aria-label="Brick Dash game"></canvas>
+<div id="sa"></div>
+<div id="ui">
+ <div class="pad" id="dpad"><div class="arr" id="aL"></div><div class="arr" id="aR"></div><div class="arr" id="aD"></div></div>
+ <div class="btn" id="bB">B</div><div class="btn" id="bA">A</div>
+ <div class="lbl" id="lB">RUN/FIRE</div><div class="lbl" id="lA">JUMP</div>
+ <div id="bP">II</div>
+</div>
+<script>
+'use strict';
+// =====================================================================
+//  BRICK DASH  -  an original retro platformer. All art, levels, music
+//  and sound are authored from code in this file.
+// =====================================================================
+const W=256,H=240,TS=16,ROWS=15,STEP_MS=1000/60;
+const cv=document.getElementById('game'),ctx=cv.getContext('2d',{alpha:false});
+ctx.imageSmoothingEnabled=false;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const sign=v=>v>0?1:v<0?-1:0;
+function mkC(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+
+// ---------- pixel sprite from string rows ----------
+function spr(rows,pal){const w=Math.max(...rows.map(r=>r.length)),h=rows.length,c=mkC(w,h),g=c.getContext('2d');
+ for(let y=0;y<h;y++){const r=rows[y];for(let x=0;x<r.length;x++){const ch=r[x],col=pal[ch];if(ch!=='.'&&ch!==' '&&col){g.fillStyle=col;g.fillRect(x,y,1,1)}}}return c}
+function flipC(src){const c=mkC(src.width,src.height),g=c.getContext('2d');g.translate(src.width,0);g.scale(-1,1);g.drawImage(src,0,0);return c}
+function pix(w,h,fn){const c=mkC(w,h),g=c.getContext('2d');for(let y=0;y<h;y++)for(let x=0;x<w;x++){const col=fn(x,y);if(col){g.fillStyle=col;g.fillRect(x,y,1,1)}}return c}
+function hash(x,y){let h=(x*374761393+y*668265263)^0x5bd1e995;h=(h^(h>>>13))*1274126177;return ((h^(h>>>16))>>>0)/4294967296}
+
+// ---------- 5x7 pixel font ----------
+const FONT_SRC={
+A:'.###.|#...#|#...#|#####|#...#|#...#|#...#',B:'####.|#...#|#...#|####.|#...#|#...#|####.',C:'.###.|#...#|#....|#....|#....|#...#|.###.',
+D:'####.|#...#|#...#|#...#|#...#|#...#|####.',E:'#####|#....|#....|####.|#....|#....|#####',F:'#####|#....|#....|####.|#....|#....|#....',
+G:'.###.|#...#|#....|#.###|#...#|#...#|.####',H:'#...#|#...#|#...#|#####|#...#|#...#|#...#',I:'.###.|..#..|..#..|..#..|..#..|..#..|.###.',
+J:'..###|...#.|...#.|...#.|...#.|#..#.|.##..',K:'#...#|#..#.|#.#..|##...|#.#..|#..#.|#...#',L:'#....|#....|#....|#....|#....|#....|#####',
+M:'#...#|##.##|#.#.#|#.#.#|#...#|#...#|#...#',N:'#...#|#...#|##..#|#.#.#|#..##|#...#|#...#',O:'.###.|#...#|#...#|#...#|#...#|#...#|.###.',
+P:'####.|#...#|#...#|####.|#....|#....|#....',Q:'.###.|#...#|#...#|#...#|#.#.#|#..#.|.##.#',R:'####.|#...#|#...#|####.|#.#..|#..#.|#...#',
+S:'.####|#....|#....|.###.|....#|....#|####.',T:'#####|..#..|..#..|..#..|..#..|..#..|..#..',U:'#...#|#...#|#...#|#...#|#...#|#...#|.###.',
+V:'#...#|#...#|#...#|#...#|#...#|.#.#.|..#..',W:'#...#|#...#|#...#|#.#.#|#.#.#|#.#.#|.#.#.',X:'#...#|#...#|.#.#.|..#..|.#.#.|#...#|#...#',
+Y:'#...#|#...#|.#.#.|..#..|..#..|..#..|..#..',Z:'#####|....#|...#.|..#..|.#...|#....|#####',
+0:'.###.|#...#|#..##|#.#.#|##..#|#...#|.###.',1:'..#..|.##..|..#..|..#..|..#..|..#..|.###.',2:'.###.|#...#|....#|...#.|..#..|.#...|#####',
+3:'####.|....#|....#|.###.|....#|....#|####.',4:'...#.|..##.|.#.#.|#..#.|#####|...#.|...#.',5:'#####|#....|####.|....#|....#|#...#|.###.',
+6:'.###.|#....|#....|####.|#...#|#...#|.###.',7:'#####|....#|...#.|..#..|.#...|.#...|.#...',8:'.###.|#...#|#...#|.###.|#...#|#...#|.###.',
+9:'.###.|#...#|#...#|.####|....#|....#|.###.','.':'.....|.....|.....|.....|.....|.##..|.##..',':':'.....|.##..|.##..|.....|.##..|.##..|.....',
+'-':'.....|.....|.....|.###.|.....|.....|.....','!':'..#..|..#..|..#..|..#..|..#..|.....|..#..','x':'.....|.....|#...#|.#.#.|..#..|.#.#.|#...#',
+"'":'..#..|..#..|.#...|.....|.....|.....|.....','?':'.###.|#...#|....#|..##.|..#..|.....|..#..','/':'....#|...#.|...#.|..#..|.#...|.#...|#....',
+'>':'.#...|..#..|...#.|....#|...#.|..#..|.#...','<':'...#.|..#..|.#...|#....|.#...|..#..|...#.',',':'.....|.....|.....|.....|.##..|..#..|.#...',
+'+':'.....|..#..|..#..|#####|..#..|..#..|.....','#':'.#.#.|#####|.#.#.|.#.#.|.#.#.|#####|.#.#.','(':'...#.|..#..|.#...|.#...|.#...|..#..|...#.',
+')':'.#...|..#..|...#.|...#.|...#.|..#..|.#...','=':'.....|.....|#####|.....|#####|.....|.....','@':'.###.|#####|#####|#####|#####|#####|.###.'};
+const FONT={};for(const k in FONT_SRC)FONT[k]=FONT_SRC[k].split('|');
+const glyphCache=new Map();
+function glyph(ch,col){const key=ch+col;let g=glyphCache.get(key);if(!g){const rows=FONT[ch];if(!rows)return null;g=pix(5,7,(x,y)=>rows[y][x]==='#'?col:null);glyphCache.set(key,g)}return g}
+function text(s,x,y,col='#fff',sc=1,shadow='#000'){s=String(s).toUpperCase();x=Math.round(x);y=Math.round(y);
+ for(let i=0;i<s.length;i++){const ch=s[i];if(ch!==' '){if(shadow){const gs=glyph(ch,shadow);if(gs)ctx.drawImage(gs,x+i*6*sc+sc,y+sc,5*sc,7*sc)}const g=glyph(ch,col);if(g)ctx.drawImage(g,x+i*6*sc,y,5*sc,7*sc)}}}
+function textW(s,sc=1){return String(s).length*6*sc-sc}
+function textC(s,y,col,sc=1,shadow='#000'){text(s,(W-textW(s,sc))/2,y,col,sc,shadow)}
+
+// =====================================================================
+//  ART  (all original, authored here)
+// =====================================================================
+// Kit the courier fox - small form (16x16), facing right
+const KS_HEAD=[
+"....K....K......",
+"...KoK..KoK.....",
+"...KBBBBBBK.....",
+"..KBBBBBBBBK....",
+"..KBBBBBBbbbbK..",
+"..KOOOOOOOEOK...",
+".KOOOOOOOWWWWNK.",
+"..KOOOOOWWWWKK..",
+"...KKOOOOKKK...."];
+const KS_BODY=[
+"KK.KSsOOOK......",
+"KWKKSWWWOOK.....",
+"KOOKSWWWOOK.....",
+".KOOSOOOOOK.....",
+"..KKKOOOOK......"];
+const KS_LEGS={stand:["....KsKKsK......","....KK..KK......"],w1:["...KsK..KsK.....","...KK....KK....."],w2:[".....KssK.......",".....KKKK......."],
+ jump:["...KsK..KsK.....","..KK.....KK....."],skid:["..KsKKsK........","..KK..KK........"]};
+const KB_HEAD=[
+"....K.....K.....",
+"...KoK...KoK....",
+"...KooK.KooK....",
+"...KBBBBBBBK....",
+"..KBBBBBBBBBK...",
+"..KBBBBBBBBBK...",
+"..KBBBBBBbbbbbK.",
+"..KOOOOOOOOEOK..",
+"..KOOOOOOOOEOKK.",
+".KOOOOOOOOWWWWNK",
+".KOOOOOOOWWWWWK.",
+"..KKOOOOWWWKKK.."];
+const KB_BODY=[
+"...KKOOOOOKK....",
+"...KSsOOOOOK....",
+"KK.KSsWWWWOK....",
+"KWKKSsWWWWOOK...",
+"KWOKSsWWWWOKOK..",
+"KOOKSSWWWWOKOK..",
+"KOOOKSWWWWOKK...",
+".KOOOKOOOOOK....",
+"..KKKOOOOOOK....",
+"....KOOOOOOK....",
+"....KOOOOOK.....",
+"....KOOKOOK....."];
+const KB_LEGS={
+ stand:["....KOOKOOK.....","....KOOKOOK.....","....KOOKOOK.....","....KOOKOOK.....","....KssKssK.....","....KssKssK.....","...KsssKsssK....","...KKKKKKKKK...."],
+ w1:["...KOOK.KOOK....","...KOOK..KOOK...","..KOOK....KOOK..","..KOOK....KOOK..","..KssK....KssK..","..KssK....KssK..",".KsssK....KsssK.",".KKKKK....KKKKK."],
+ w2:["....KOOKOOK.....","....KOOOOOK.....",".....KOOOK......",".....KOOOK......",".....KssK.......",".....KssK.......","....KsssK.......","....KKKKK......."],
+ jump:["...KOOK.KOOK....","..KOOK...KOOK...","..KOOK....KsK...","..KssK....KsK...","..KssK....KKK...",".KsssK..........",".KKKKK..........","................"],
+ skid:["....KOOKOOK.....","...KOOK.KOOK....","..KOOK...KOOK...","..KssK...KssK...","..KssK...KssK...",".KsssK..KsssK...",".KKKKK..KKKKK...","................"]};
+const HERO_PALS={
+ normal:{K:'#2b1b2f',O:'#f07a2a',o:'#b24d1e',W:'#fff0d2',B:'#2f6fe0',b:'#1c3f94',E:'#10101a',N:'#10101a',S:'#8a5a2b',s:'#5a3818'},
+ spark:{K:'#2b1b2f',O:'#fbf7ea',o:'#c8bfa8',W:'#ffd66a',B:'#e8402c',b:'#9a1f14',E:'#10101a',N:'#10101a',S:'#6a3ad0',s:'#3a2070'},
+ st0:{K:'#3a0a20',O:'#ff4a8a',o:'#c02060',W:'#fff',B:'#ffe040',b:'#c09000',E:'#000',N:'#000',S:'#40e0ff',s:'#1080a0'},
+ st1:{K:'#0a2a10',O:'#50f070',o:'#20a040',W:'#fff',B:'#ff6020',b:'#a03000',E:'#000',N:'#000',S:'#ffe040',s:'#a08000'},
+ st2:{K:'#101040',O:'#60a0ff',o:'#3060d0',W:'#fff',B:'#ff40c0',b:'#a02080',E:'#000',N:'#000',S:'#ff8040',s:'#a04010'}};
+const HERO={};
+(function buildHero(){
+ for(const pn in HERO_PALS){const pal=HERO_PALS[pn];HERO[pn]={s:{},b:{}};
+  for(const f in KS_LEGS){const rows=KS_HEAD.concat(KS_BODY,KS_LEGS[f]);const c=spr(rows,pal);HERO[pn].s[f]=[c,flipC(c)]}
+  {const rows=KS_HEAD.map(r=>r.replace('E','x')).concat(KS_BODY,KS_LEGS.jump);const c=spr(rows,Object.assign({x:'#10101a'},pal));
+   const d=mkC(16,16),g=d.getContext('2d');g.translate(0,16);g.scale(1,-1);g.drawImage(c,0,0);HERO[pn].s.dead=[d,d]}
+  for(const f in KB_LEGS){const rows=KB_HEAD.concat(KB_BODY,KB_LEGS[f]);const c=spr(rows,pal);HERO[pn].b[f]=[c,flipC(c)]}
+ }})();
+
+// Enemies -----------------------------------------------------------
+const PAL_BLOB={K:'#2a1630',P:'#8e4fd0',p:'#5a2c8e',W:'#ffffff',E:'#1a0a1a',Y:'#ffd84a'};
+const BLOB_A=["................","......Y...Y.....","..Y...YY.YY..Y..","..YY.KYYYYK.YY..","...YKPPPPPPKY...","...KPPPPPPPPK...","..KPPPPPPPPPPK..","..KPWWPPPPWWPK..",".KPPWEPPPPWEPPK.",".KPPWEPPPPWEPPK.",".KPPPPPPPPPPPPK.",".KpPPPKKKKPPPpK.",".KppPPPPPPPPppK.","..KppppppppppK..","..KKKpKKKKpKKK..","...KKK....KKK..."];
+const BLOB_B=BLOB_A.slice(0,14).concat(["..KKpKKKKKKpKK..","..KKK......KKK.."]);
+const BLOB_F=["................","................","................","................","................","................","................","................","................","................","................","................","..Y.Y.Y.Y.Y.Y...",".KPPPPPPPPPPPPK.",".KPWEPPPPPPWEPK.",".KKKKKKKKKKKKKK."];
+const PAL_BEET={K:'#24140a',R:'#e0a02a',r:'#9a6010',H:'#fff0a0',Y:'#6a3a1e',L:'#3a2010',W:'#ffffff',E:'#101010'};
+const BEET_A=["................","................","................","....KKKKKK......","...KHHRRRRK.....","..KHRRRRrRRK....","..KRRRrRRRRRK...",".KRRrRRRRrRRK...",".KRRRRRRRRRRKKK.",".KrRRRRRRRRrKWEK",".KYYYYYYYYYYKWWK",".KKKKKKKKKKKKKKK","..KLK..KLK..KK..","..KLK..KLK......",".KLK..KLK.......",".KK...KK........"];
+const BEET_B=BEET_A.slice(0,12).concat(["...KLK..KLK.KK..","...KLK..KLK.....","...KLK..KLK.....","...KK...KK......"]);
+const SHELL_A=["................","................","................","................","................","................","................","................","....KKKKKKKK....","...KHHRRRRRRK...","..KHRRrRRrRRRK..","..KRRRRRRRRRRK..","..KRrRRRRRRrRK..","..KYYYYYYYYYYK..","..KYKYKYKYKYYK..","...KKKKKKKKKK..."];
+const PAL_FLY={K:'#2a1a10',Y:'#ffcf3a',k:'#3a2a1a',W:'#eafaff',w:'#8fcfea',E:'#ffffff',R:'#e04040'};
+const FLY_A=["...wWW...WWw....","..wWWWW.WWWWw...","..wWWWWKWWWWw...","...wWWKKKWWw....","....KKYYYKK.....","...KYYYYYYYK....","..KkkYYkkYEEK...","..KYYkkYYkEKK...","..KYYYYkkYYYKK..","..KkkYYYYkkYYK..","...KYYkkYYYYK...","....KKYYYYKK....",".....KKKKK......","......KR........","................","................"];
+const FLY_B=["................","................","................","................","....KKYYYKK.....","..wKYYYYYYYKw...",".wWKkYYkkYEEKWw.","wWWKYkkYYkEKKWWw","wWWKYYYkkYYYKWWw",".wwKkYYYYkkYYKw.","...KYYkkYYYYK...","....KKYYYYKK....",".....KKKKK......","......KR........","................","................"];
+const PAL_HOP={K:'#16242a',T:'#35c7b0',t:'#a8f5e8',W:'#ffffff',E:'#102020',M:'#b8b8c8',m:'#707088'};
+const HOP_A=["................","................","................","................",".....KKKKKK.....","....KTTTTTTK....","...KTttTTTTTK...","..KTTWWTTWWTTK..","..KTTWEKTWEKTK..","..KTTTTTTTTTTK..","..KTTTKKKKTTTK..","...KTTTTTTTTK...","....KKKKKKKK....",".....KMmMmK.....","....KMMMMMMK....","....KKKKKKKK...."];
+const HOP_B=["................",".....KKKKKK.....","....KTTTTTTK....","...KTttTTTTTK...","..KTTWWTTWWTTK..","..KTTWEKTWEKTK..","..KTTTTTTTTTTK..","..KTTTKKKKTTTK..","...KTTTTTTTTK...","....KKKKKKKK....","......KMMK......",".....KMmK.......","......KmMK......",".....KMmK.......","....KMMMMMK.....","....KKKKKKK....."];
+function pair(rows,pal){const c=spr(rows,pal);return [c,flipC(c)]}
+const ART={
+ blob:[pair(BLOB_A,PAL_BLOB),pair(BLOB_B,PAL_BLOB)],blobFlat:pair(BLOB_F,PAL_BLOB),
+ beetle:[pair(BEET_A,PAL_BEET),pair(BEET_B,PAL_BEET)],shell:pair(SHELL_A,PAL_BEET),
+ flyer:[pair(FLY_A,PAL_FLY),pair(FLY_B,PAL_FLY)],hopper:[pair(HOP_A,PAL_HOP),pair(HOP_B,PAL_HOP)]};
+
+// Boss "Magmus, the Cinder Mole" - 32x32, drawn procedurally
+function bossArt(frame,hurt){
+ return pix(32,32,(x,y)=>{
+  const cx=16,cy=19,dx=(x-cx)/14.5,dy=(y-cy)/12.5,d=dx*dx+dy*dy;
+  // horns
+  if(y<9){const hl=Math.abs(x-7)<=(y-1)/3&&y>1, hr=Math.abs(x-24)<=(y-1)/3&&y>1;if(hl||hr)return y<4?'#fff3c0':'#e0c080'}
+  // feet
+  if(y>=29){const fl=x>=5&&x<=12,fr=x>=19&&x<=26;const off=frame?1:0;if((fl&&y<32-off)||(fr&&y<31+off))return y===29?'#2a1414':'#3a1c1c'}
+  if(d>1)return null;
+  if(d>0.86)return '#1a0a0a';
+  if(hurt)return (x+y)%2?'#ffffff':'#ffd0a0';
+  // eyes
+  if(y>=13&&y<=15&&((x>=9&&x<=12)||(x>=19&&x<=22)))return y===14&&(x===11||x===20)?'#ffffff':'#ffe14a';
+  if(y===12&&((x>=8&&x<=12)||(x>=19&&x<=23)))return '#1a0a0a';
+  // mouth + teeth
+  if(y>=19&&y<=22&&x>=10&&x<=21){if(y===19&&x%3===0)return '#fff3e0';if(y===22&&x%3===1)return '#fff3e0';return '#2a0606'}
+  // snout
+  if(y>=16&&y<=18&&x>=14&&x<=17)return '#ff9a8a';
+  // molten cracks
+  const n=hash(x>>1,y>>1);const crack=(Math.abs(((x*3+y*5)%11)-5)<1&&n>0.45)||((x+y*2)%13===0&&n>0.6);
+  if(crack&&y>9)return frame?'#ffb02a':'#ff7a1a';
+  const shade=dy>0.45?'#4a2424':dy<-0.4?'#8a4a3a':'#6a3430';
+  return shade});}
+ART.boss=[bossArt(0,false),bossArt(1,false),bossArt(0,true)].map(c=>[c,flipC(c)]);
+
+// Items -------------------------------------------------------------
+function circleArt(r,fn){return pix(16,16,(x,y)=>{const dx=x-7.5,dy=y-8.5,d=Math.sqrt(dx*dx+dy*dy);return fn(x,y,d,dx,dy)})}
+ART.berry=circleArt(0,(x,y,d,dx,dy)=>{ // "Sunberry" - grow item
+ if(y<=4){if((x===7||x===8)&&y>=2)return '#5a3a1a';if(y>=1&&y<=3&&x>=9&&x<=12&&Math.abs(y-2)<=(12-x)/2)return '#4ac040';return null}
+ const dd=Math.sqrt(dx*dx+(dy-0.5)*(dy-0.5));if(dd>6.6)return null;if(dd>5.6)return '#5a1020';
+ if(dx<-1.5&&dy<0&&dd<4.2&&dd>2.4)return '#ffd0d8';if((x*7+y*3)%9===0)return '#ffe080';return dy>2?'#b02040':'#ff4a5a'});
+ART.bulb=[0,1].map(f=>circleArt(0,(x,y,d,dx,dy)=>{ // "Volt Bulb" - spark power
+ if(y>=12){if(x>=5&&x<=10&&y<=14)return y===13?'#5a5a70':'#a0a0b8';return null}
+ const dd=Math.sqrt(dx*dx+(dy+1.5)*(dy+1.5));if(dd>6.5)return null;if(dd>5.5)return '#203060';
+ const bolt=(y>=4&&y<=7&&x===9-((y-4)>>1))||(y===7&&x>=6&&x<=9)||(y>=7&&y<=10&&x===7-((y-7)>>1)+1);
+ if(bolt)return f?'#ffffff':'#fff07a';return dd<2.5?(f?'#c0f0ff':'#90e0ff'):(f?'#60c0ff':'#4090f0')}));
+const COMET_COLS=['#ff5a8a','#ffd040','#50f080','#60b0ff','#c070ff'];
+ART.comet=[0,1,2,3,4].map(f=>pix(16,16,(x,y)=>{ // "Comet Charm" - invincibility
+ const dx=Math.abs(x-7.5),dy=Math.abs(y-7.5);const v=dx*1.15+dy*0.85;
+ if(v>7.2)return null;if(v>6.2)return '#2a1440';if(v<2.2)return '#ffffff';
+ return COMET_COLS[(f+((x+y)>>2))%5]}));
+ART.heart=pix(16,16,(x,y)=>{ // "Clover Heart" - 1-up
+ const u=(x-7.5)/6.4,v=-(y-7)/6.4;const q=Math.pow(u*u+v*v-1,3)-u*u*v*v*v;if(q>0)return null;
+ const u2=(x-7.5)/5.2,v2=-(y-7)/5.2;const q2=Math.pow(u2*u2+v2*v2-1,3)-u2*u2*v2*v2*v2;
+ if(q2>0)return '#0a3a14';if(x<6&&y<6)return '#c8ffc8';return y>9?'#20a040':'#3ad060'});
+ART.coin=[10,7,3,7].map(w=>pix(16,16,(x,y)=>{const dx=(x-7.5)/(w/2),dy=(y-8)/6.5;const d=dx*dx+dy*dy;if(d>1)return null;if(d>0.62)return '#a06010';
+ if(w>4&&Math.abs(x-7.5)<1&&y>=5&&y<=11)return '#ffe9a0';return '#ffc830'}));
+ART.spark=[0,1].map(f=>pix(8,8,(x,y)=>{const dx=Math.abs(x-3.5),dy=Math.abs(y-3.5);if(f?(dx<1&&dy<4)||(dy<1&&dx<4):(Math.abs(dx-dy)<1&&dx<3.5)||(dx<1.5&&dy<1.5))return dx+dy<2?'#ffffff':'#ffd23a';return null}));
+ART.fireball=[0,1].map(f=>pix(10,10,(x,y)=>{const d=Math.hypot(x-4.5,y-4.5);if(d>4.6)return null;if(d<2)return '#fff6c0';return (f^(x+y)%2)?'#ff7a1a':'#ffb02a'}));

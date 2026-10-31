@@ -1,0 +1,517 @@
+[
+ {
+  "name": "jump height range (tap < hold-walk < hold-run)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "tapPx": 17,
+   "walkPx": 54.8,
+   "runPx": 68.2,
+   "runSpeed": 2.6
+  }
+ },
+ {
+  "name": "high-speed floor collision (no tunnelling, exact landing)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "drops": 120,
+   "violations": 0
+  }
+ },
+ {
+  "name": "high-speed wall collision (forced vx up to 15.9 px/frame)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "trials": 160,
+   "violations": 0
+  }
+ },
+ {
+  "name": "ceiling collision (head stops at block, no pass-through)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "violations": 0
+  }
+ },
+ {
+  "name": "corner handling (ledge assist + ceiling corner correction)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "ledge": true,
+   "corner": true,
+   "minY": 139.24999999999997
+  }
+ },
+ {
+  "name": "stomp enemy (squash + bounce + score)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "bounced": true,
+   "scoreGain": 100,
+   "alive": true,
+   "ok": true
+  }
+ },
+ {
+  "name": "hurt rules (big->small with i-frames, small->death)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "shrunk": true,
+   "invFrames": 120,
+   "survived": true,
+   "smallDied": true
+  }
+ },
+ {
+  "name": "shell kick knocks out other enemies",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "becameShell": true,
+   "kicked": true,
+   "otherKO": true
+  }
+ },
+ {
+  "name": "power-up growth (Sunberry -> big, Volt Bulb -> spark, sparks KO enemy)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "kind": "berry",
+   "grew": true,
+   "kind2": "bulb",
+   "spark": true,
+   "sparksFired": 1,
+   "enemyKO": true
+  }
+ },
+ {
+  "name": "Comet Charm invincibility + Clover Heart 1-up",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "star": true,
+   "enemyKO": true,
+   "livesGained": 1
+  }
+ },
+ {
+  "name": "brick break when big, bump when small",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "bigBroke": true,
+   "debris": 4,
+   "smallBumpedOnly": true
+  }
+ },
+ {
+  "name": "coin counting (+1 per coin, 100 coins = 1-up)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "afterRow": 5,
+   "afterBlock": 6,
+   "after100": 0,
+   "livesGained": 1
+  }
+ },
+ {
+  "name": "pit death, respawn, and midway checkpoint",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "died": true,
+   "introShown": true,
+   "respawnAtStart": true,
+   "checkpointHit": true,
+   "respawnAtCheckpoint": true
+  }
+ },
+ {
+  "name": "lava + fire geyser are deadly / hurtful",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "lavaKills": true,
+   "geyserHurts": true
+  }
+ },
+ {
+  "name": "reach goal flag: height score, tally, next stage unlock + save",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "flag": true,
+   "flagPts": 100,
+   "nextStage": true,
+   "savedUnlocked": "2",
+   "savedBest": "20000"
+  }
+ },
+ {
+  "name": "bonus area via tube and back to exit tube",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "enteredRoom": true,
+   "roomCoins": 16,
+   "reachedExitTube": true,
+   "returnedAtExitTube": true
+  }
+ },
+ {
+  "name": "boss fight: Magmus takes 3 stomps, defeat -> win screen",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "bossActivated": true,
+   "stompsToDefeat": 3,
+   "win": true
+  }
+ },
+ {
+  "name": "boss hurts player on contact + fireballs spawn",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "fireballs": 1,
+   "contactKills": true
+  }
+ },
+ {
+  "name": "all levels + bonus rooms load and simulate 600 frames",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "loaded": [
+    "MEADOW RUN",
+    "CRYSTAL MINES",
+    "SKYBRIDGE HEIGHTS",
+    "CINDER KEEP",
+    "BONUS ROOM",
+    "BONUS ROOM"
+   ]
+  }
+ },
+ {
+  "name": "completable: stage 1 (search + real-game replay, small Kit)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 0,
+    "size": 0,
+    "ok": true,
+    "expanded": 21,
+    "bestX": 2988,
+    "goalX": 3136,
+    "frames": 1259,
+    "macros": 21
+   },
+   "replay": {
+    "mode": "flag",
+    "x": 3132,
+    "onGround": true,
+    "dead": false,
+    "frames": 1259,
+    "time": 348
+   }
+  }
+ },
+ {
+  "name": "completable: stage 1 (search, big Kit hitbox)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 0,
+    "size": 1,
+    "ok": true,
+    "expanded": 22,
+    "bestX": 2965,
+    "goalX": 3136,
+    "frames": 1332,
+    "macros": 22
+   }
+  }
+ },
+ {
+  "name": "completable: stage 2 (search + real-game replay, small Kit)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 1,
+    "size": 0,
+    "ok": true,
+    "expanded": 21,
+    "bestX": 3041,
+    "goalX": 3056,
+    "frames": 1272,
+    "macros": 21
+   },
+   "replay": {
+    "mode": "flag",
+    "x": 3052,
+    "onGround": true,
+    "dead": false,
+    "frames": 1272,
+    "time": 347
+   }
+  }
+ },
+ {
+  "name": "completable: stage 2 (search, big Kit hitbox)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 1,
+    "size": 1,
+    "ok": true,
+    "expanded": 21,
+    "bestX": 2941,
+    "goalX": 3056,
+    "frames": 1275,
+    "macros": 21
+   }
+  }
+ },
+ {
+  "name": "completable: stage 3 (search + real-game replay, small Kit)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 2,
+    "size": 0,
+    "ok": true,
+    "expanded": 19,
+    "bestX": 3025,
+    "goalX": 3136,
+    "frames": 1213,
+    "macros": 18
+   },
+   "replay": {
+    "mode": "flag",
+    "x": 3132,
+    "onGround": false,
+    "dead": false,
+    "frames": 1213,
+    "time": 350
+   }
+  }
+ },
+ {
+  "name": "completable: stage 3 (search, big Kit hitbox)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 2,
+    "size": 1,
+    "ok": true,
+    "expanded": 21,
+    "bestX": 3026,
+    "goalX": 3136,
+    "frames": 1283,
+    "macros": 21
+   }
+  }
+ },
+ {
+  "name": "completable: stage 4 (search + real-game replay, small Kit)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 3,
+    "size": 0,
+    "ok": true,
+    "expanded": 15,
+    "bestX": 2294,
+    "goalX": 2400,
+    "frames": 924,
+    "macros": 15
+   },
+   "replay": {
+    "mode": "play",
+    "x": 2410.650577261769,
+    "onGround": true,
+    "dead": false,
+    "frames": 924,
+    "time": 262
+   }
+  }
+ },
+ {
+  "name": "completable: stage 4 (search, big Kit hitbox)",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 3,
+    "size": 1,
+    "ok": true,
+    "expanded": 14,
+    "bestX": 2323,
+    "goalX": 2400,
+    "frames": 926,
+    "macros": 14
+   }
+  }
+ },
+ {
+  "name": "verifier negative control: an 11-tile pit is reported impossible",
+  "pass": true,
+  "detail": {
+   "pass": true,
+   "search": {
+    "stage": 0,
+    "size": 0,
+    "ok": false,
+    "expanded": 3961,
+    "bestX": 960,
+    "goalX": 3136,
+    "frames": 0
+   }
+  }
+ },
+ {
+  "name": "keyboard controls (arrows + X run + Z jump)",
+  "pass": true,
+  "detail": {
+   "dx": 93.22499999999988,
+   "jumpPx": 60.80000000000001
+  }
+ },
+ {
+  "name": "pause freezes game and resumes",
+  "pass": true,
+  "detail": {
+   "paused": true,
+   "frozen": true,
+   "resumed": true
+  }
+ },
+ {
+  "name": "title -> start game via keyboard",
+  "pass": true,
+  "detail": {
+   "mode": "intro"
+  }
+ },
+ {
+  "name": "perf: 60fps with fixed 60Hz updates",
+  "pass": true,
+  "detail": {
+   "rafFps": 60.2,
+   "updatesPerFrame": 1,
+   "avgFrameWorkMs": 0.221,
+   "maxFrameWorkMs": 0.5
+  }
+ },
+ {
+  "name": "perf: 4x CPU throttle still under 16.7ms/frame",
+  "pass": true,
+  "detail": {
+   "avgFrameWorkMs": 0.765,
+   "frames": 120
+  }
+ },
+ {
+  "name": "touch controls 844x390 (tap start, multitouch run+jump, no scroll/zoom)",
+  "pass": true,
+  "detail": {
+   "tapStart": "intro",
+   "dx": 118.3,
+   "runVx": 2.6,
+   "jumpPx": 60.8,
+   "scroll": [
+    0,
+    0
+   ],
+   "zoom": 1,
+   "buttonsOnScreen": true,
+   "buttonsOutsideCanvas": true,
+   "canvasCss": {
+    "x": 251.328125,
+    "y": 35,
+    "w": 341.328125,
+    "h": 320
+   }
+  }
+ },
+ {
+  "name": "touch pause button 844x390",
+  "pass": true,
+  "detail": {}
+ },
+ {
+  "name": "integer scaling 844x390",
+  "pass": true,
+  "detail": {
+   "k": 3.99993896484375,
+   "k2": 4
+  }
+ },
+ {
+  "name": "touch controls 390x844 (tap start, multitouch run+jump, no scroll/zoom)",
+  "pass": true,
+  "detail": {
+   "tapStart": "intro",
+   "dx": 118.3,
+   "runVx": 2.6,
+   "jumpPx": 60.8,
+   "scroll": [
+    0,
+    0
+   ],
+   "zoom": 1,
+   "buttonsOnScreen": true,
+   "buttonsOutsideCanvas": true,
+   "canvasCss": {
+    "x": 24.328125,
+    "y": 76.796875,
+    "w": 341.328125,
+    "h": 320
+   }
+  }
+ },
+ {
+  "name": "touch pause button 390x844",
+  "pass": true,
+  "detail": {}
+ },
+ {
+  "name": "integer scaling 390x844",
+  "pass": true,
+  "detail": {
+   "k": 3.99993896484375,
+   "k2": 4
+  }
+ },
+ {
+  "name": "gamepad (stick move, A jump, X run, Start pause)",
+  "pass": true,
+  "detail": {
+   "dx": 91.52499999999989,
+   "jumpPx": 60.80000000000001,
+   "startPauses": true
+  }
+ },
+ {
+  "name": "zero console errors across all pages",
+  "pass": true,
+  "detail": {
+   "errors": []
+  }
+ }
+]
